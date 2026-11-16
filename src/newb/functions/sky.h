@@ -114,8 +114,8 @@ vec3 renderOverworldSky(nl_skycolor skyCol, nl_environment env, vec3 viewDir, bo
   float rainMask = 1.0 - 0.5*env.rainFactor;
   float gradient1 = vh4*vh4;
   float gradient2 = 0.8*gradient1 + 0.2*vh2;
-  gradient1 *= gradient1;
-  gradient1 = mix(gradient1*gradient1, 1.0, mg8)*rainMask;
+  gradient1 *= gradient1; // (1 - y^2)^16: horizon -> edge falloff, softer than the original ^32 so the band has no visible edge
+  gradient1 = mix(gradient1, 1.0, mg8)*rainMask;
   gradient2 = mix(gradient2, 1.0, mg8)*rainMask;
 
   float dawnFactor = 1.0-env.dayFactor*env.dayFactor;
