@@ -253,8 +253,8 @@ vec4 renderBlackhole(vec3 viewdir,float t) {
     return vec4(col,hole);
 }
 
-// sharp, slowly drifting light streaks hanging in the upper sky, brighter than the sky behind them
-// (all multipliers of the angle are integers: no seam)
+// sharp, slowly drifting light beams that rise from the void below the End island up to almost the zenith, brighter
+// than the sky behind them (all multipliers of the angle are integers: no seam)
 vec3 endstreaks(vec3 horizonCol,vec3 zenithCol,vec3 viewDir,float t) {
   float skyTime = t*0.2;
 
@@ -263,20 +263,22 @@ vec3 endstreaks(vec3 horizonCol,vec3 zenithCol,vec3 viewDir,float t) {
 
   float w1 = 0.5 + 0.5*sin(5.0*a + 0.9*sin(3.0*a + 0.7*skyTime) + 0.5*skyTime);
   float w2 = 0.5 + 0.5*sin(9.0*a - 0.35*skyTime + 2.0*w1);
-  float w3 = 0.5 + 0.5*sin(13.0*a + 0.5*skyTime + 3.0*w2);
 
-  // two thin ribbons: a bright main one and a fainter one above it, narrow in height so the edges are crisp
-  float h1 = y - (0.30 + 0.13*w1 + 0.04*w2);
-  float h2 = y - (0.50 + 0.10*w2 + 0.04*w3);
-  float rib = exp(-h1*h1*70.0) + 0.45*exp(-h2*h2*90.0);
+  // thin bright beams with dark gaps; the phase leans slightly with the height so the beams bend a little
+  float lean = 2.0*(w1 - 0.5)*y;
+  float beams = 0.5 + 0.5*sin(26.0*a + 5.0*w1 + lean + 0.6*skyTime);
+  beams = pow(beams, 3.0);
+  float fine = 0.5 + 0.5*sin(52.0*a + 9.0*w2 - 0.4*skyTime);
+  beams *= 0.55 + 0.45*fine;
 
-  // sharp vertical rays inside the ribbons (thin bright lines with dark gaps)
-  float rays = 0.5 + 0.5*sin(48.0*a + 7.0*w1 + 0.6*skyTime);
-  rays = pow(rays, 3.0);
-  rays = 0.25 + 0.75*rays;
+  // beams come in groups (some stretches of sky stay empty)
+  float groups = smoothstep(0.15, 0.85, w2);
 
-  float fade = smoothstep(0.0, 0.2, y)*(1.0 - smoothstep(0.6, 0.95, y)); // none at the horizon and at the pole
-  float inten = rib*fade*(0.35 + 0.65*w2)*rays;
+  // vertical profile: starts deep in the void, strongest at the horizon, thins out before the zenith
+  float prof = smoothstep(-0.95, -0.30, y)*(1.0 - smoothstep(0.70, 0.98, y));
+  prof *= 0.55 + 0.45*exp(-y*y*4.0);
+
+  float inten = beams*groups*prof;
 
   // one soft lavender, only a little lighter in the core
   vec3 col = NL_END_STREAK_COL*(1.0 + 0.8*inten);
