@@ -80,7 +80,10 @@ vec3 nlCaustics(sampler2D tex, vec3 col, vec2 worldXZ, float worldY, float camDi
   float reach = exp(-0.16*depth)*(1.0 - smoothstep(30.0, 70.0, camDist));
   float k = clamp(NL_CAUSTICS*sun*open*up*reach*submerged*(1.0 - 0.6*env.rainFactor), 0.0, 1.0);
 
-  return col*mix(vec3(1.0, 1.0, 1.0), light, k);
+  // the bright lines also add light of their own (cool white), so they still glow on a floor that is already bright
+  // and are not squashed by the tonemap
+  vec3 glow = NL_CAUSTIC_GLOW*k*max(light - 1.0, 0.0)*vec3(0.30, 0.50, 0.60);
+  return col*mix(vec3(1.0, 1.0, 1.0), light, k) + glow;
 }
 
 #endif
