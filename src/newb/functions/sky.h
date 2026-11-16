@@ -7,8 +7,7 @@
 struct nl_skycolor {
   vec3 zenith;
   vec3 horizon;
-  vec3 dawnHorizon; // warm color around the sun at sunrise/sunset (only used near the sun, see renderOverworldSky)
-  float dawn;       // [0.0, 1.0] strength of the dawn color
+  vec3 horizonEdge;
 };
 
 // rainbow spectrum
@@ -34,8 +33,7 @@ nl_skycolor nlEndSkyColors(nl_environment env) {
   nl_skycolor s;
   s.zenith = getEndZenithCol();
   s.horizon = getEndHorizonCol();
-  s.dawnHorizon = s.horizon;
-  s.dawn = 0.0;
+  s.horizonEdge = s.horizon;
   return s;
 }
 
@@ -44,8 +42,8 @@ nl_skycolor nlOverworldSkyColors(nl_environment env) {
   float f = 1.0 + 2.0*(1.0-max(-env.dayFactor, 0.0));
   float nightFactor = step(env.dayFactor, 0.0);
   s.zenith = mix(NL_DAY_ZENITH_COL, NL_NIGHT_ZENITH_COL*f, nightFactor);
-  // horizon: smooth night/day blend (the dawn color is added around the sun only)
-  s.horizon = mix(NL_DAY_HORIZON_COL, NL_NIGHT_HORIZON_COL*f, 1.0 - smoothstep(-0.12, 0.25, env.dayFactor));
+  s.horizon = mix(NL_DAY_HORIZON_COL, NL_NIGHT_HORIZON_COL*f, nightFactor);
+  s.horizonEdge = mix(NL_DAY_EDGE_COL, NL_NIGHT_EDGE_COL*f, nightFactor);
 
   float dawnFactor = 1.0-env.dayFactor*env.dayFactor;
   dawnFactor *= dawnFactor*dawnFactor;
@@ -53,20 +51,21 @@ nl_skycolor nlOverworldSkyColors(nl_environment env) {
   // in rain the dawn colors turn into the plain day colors: no bright dawn band under the clouds, and no jump at
   // sunrise either (the dawn blend still bridges the night/day switch)
   s.zenith = mix(s.zenith, mix(NL_DAWN_ZENITH_COL, NL_DAY_ZENITH_COL, env.rainFactor), dawnFactor);
-  s.dawnHorizon = NL_DAWN_HORIZON_COL;
-  s.dawn = dawnFactor*(1.0 - env.rainFactor); // no dawn color in rain
+  s.horizon = mix(s.horizon, mix(NL_DAWN_HORIZON_COL, NL_DAY_HORIZON_COL, env.rainFactor), dawnFactor);
+  s.horizonEdge = mix(s.horizonEdge, mix(NL_DAWN_EDGE_COL, NL_DAY_EDGE_COL, env.rainFactor), dawnFactor);
 
   float zh = dot(s.zenith, vec3_splat(0.33));
   float hh = dot(s.horizon, vec3_splat(0.33));
   float rainMix = env.rainFactor*NL_SKY_RAIN_MIX_FACTOR;
   s.zenith = mix(s.zenith, NL_RAIN_ZENITH_COL*zh, rainMix);
   s.horizon = mix(s.horizon, NL_RAIN_HORIZON_COL*hh, rainMix);
+  s.horizonEdge = mix(s.horizonEdge, s.horizon, env.rainFactor);
 
   if (env.underwater) {
     vec3 underwaterFog = env.fogCol*env.fogCol*NL_UNDERWATER_TINT;
     s.zenith = mix(2.0*underwaterFog, underwaterFog*zh, 0.8);
     s.horizon = mix(2.0*underwaterFog, underwaterFog*hh, 0.8);
-    s.dawn = 0.0;
+    s.horizonEdge = s.horizon;
   }
 
   return s;
@@ -84,13 +83,13 @@ vec3 renderOverworldSky(nl_skycolor skyCol, nl_environment env, vec3 viewDir, bo
   float mask = 0.5 + (0.5*viewDir.y/(0.4 + avy));
 
   vec2 g = clamp(0.5 - 0.5*vec2(dot(env.sunDir, viewDir), dot(env.moonDir, viewDir)), 0.0, 1.0);
-  vec2 g1 = 1.0-mix(sqrt(g), g, env.rainFactor);
+  vec2 g1 = 1.0-mix(sqrt(g), g, env.rainFactor); // round: also used by the dawn spread (NL_DAWN_WIDTH)
   vec2 g2 = g1*g1;
   vec2 gh2 = g2; // falloff of the glow around the sun
   #ifdef NL_SUN_GLOW_SHAPE
     // sun glow follows the square sun texture: shrink the sun's distance along the diagonals of the upright
     // sun quad (same basis as SunMoon/vertex.sc). On the quad axes nothing changes, the moon keeps its round glow.
-    // Only the glow is reshaped.
+    // Only the glow is reshaped, the dawn spread above stays round so NL_DAWN_WIDTH only changes the dawn sky.
     vec3 sunR = cross(vec3(0.0, 1.0, 0.0), env.sunDir);
     sunR = length(sunR) > 0.001 ? normalize(sunR) : vec3(1.0, 0.0, 0.0);
     vec2 sunQ = abs(vec2(dot(viewDir, sunR), dot(viewDir, cross(env.sunDir, sunR)))) + 1e-4;
@@ -106,25 +105,43 @@ vec3 renderOverworldSky(nl_skycolor skyCol, nl_environment env, vec3 viewDir, bo
   vec2 g8 = g4*g4;
   float mg8 = (g8.x+g8.y)*mask*(1.0-0.9*env.rainFactor);
 
-  // smooth two-color gradient (zenith -> horizon), same curve as Dracore: 1 at the horizon, falls off smoothly upward;
-  // below the horizon the sky stays at the horizon color
-  float up = max(viewDir.y, 0.0);
-  float vh = 1.0 - up*up;
-  float gradient = vh*vh*vh;
+  float vh = 1.0 - viewDir.y*viewDir.y;
+  float vh2 = vh*vh;
+  vh2 = mix(vh2, mix(1.0, vh2*vh2, NL_SKY_VOID_FACTOR), step(viewDir.y, 0.0));
+  vh2 = mix(vh2, 1.0, mg8);
+  float vh4 = vh2*vh2;
+
   float rainMask = 1.0 - 0.5*env.rainFactor;
-  gradient = mix(gradient, 1.0, mg8)*rainMask;
+  float gradient1 = vh4*vh4;
+  float gradient2 = 0.8*gradient1 + 0.2*vh2;
+  gradient1 *= gradient1;
+  gradient1 = mix(gradient1*gradient1, 1.0, mg8)*rainMask;
+  gradient2 = mix(gradient2, 1.0, mg8)*rainMask;
 
-  // dawn color only around the sun (same idea as Dracore): wide smooth falloff with the angle to the sun, and it
-  // fades upward with the gradient, so there is no hard edge anywhere
-  float nearSun = smoothstep(-0.35, 0.95, dot(viewDir, env.sunDir));
-  nearSun *= nearSun*(3.0 - 2.0*nearSun); // extra easing for a softer gradation
-  vec3 horizon = mix(skyCol.horizon, skyCol.dawnHorizon, skyCol.dawn*nearSun);
+  float dawnFactor = 1.0-env.dayFactor*env.dayFactor;
+  
+  // dawn spread: same weight as the dawn color blend in nlOverworldSkyColors
+  float dw = dawnFactor*dawnFactor*dawnFactor;
+  dw *= mix(1.0, dw*dw, step(env.dayFactor, 0.0));
+  // rain brings the sky back to the original shape (dawnGradient1/2 replace the rain-masked gradients)
+  float sw = clamp(NL_DAWN_SPREAD*dw, 0.0, 1.0)*(1.0-env.rainFactor);
+  float ew = clamp(NL_DAWN_EDGE_SPREAD*dw, 0.0, 1.0)*(1.0-env.rainFactor);
 
-  vec3 sky = mix(skyCol.zenith, horizon, gradient);
+  // angular falloff around the sun: exponent 2.0 = original, lower = wider
+  float sunFall = mix(g2.x, pow(g1.x, NL_DAWN_WIDTH), sw);
+  float df = mix(1.0, sunFall, dawnFactor*dawnFactor*(1.0-env.rainFactor)); // no dawn falloff around the sun in rain
+
+  // height falloff: exponent on (1 - y^2), 2.0 = tight, lower = reaches higher
+  float dawnGradient1 = mix(gradient1, pow(vh, NL_DAWN_HEIGHT), sw);
+  float dawnGradient2 = mix(gradient2, vh, ew);
+
+  vec3 sky = mix(skyCol.horizon, skyCol.horizonEdge, dawnGradient1*df*df);
+  sky = mix(skyCol.zenith, sky, dawnGradient2*df);
 
   // weaker gradient at night (0.5+0.5 instead of 0.8+0.8); eased night mask
   float nightMask = 1.0 - smoothstep(-0.12, 0.25, env.dayFactor); // eases in/out around sunrise and sunset (a step() here made the sky jump)
-  sky *= mix(0.8+0.8*gradient, 0.5+0.5*gradient, nightMask);
+  sky *= mix(0.8+0.8*gradient2, 0.5+0.5*gradient2, nightMask);
+  //sky *= (1.0 + (2.0*mg8 + 7.0*mg8*mg8)*mask)*mix(1.0, mask, NL_SKY_VOID_DARKNESS);
 
   if (!isSkyPlane) {
     float source = max(0.0, (mg8-0.22)/0.78);
@@ -266,9 +283,9 @@ vec3 endstreaks(vec3 horizonCol,vec3 zenithCol,vec3 viewDir,float t) {
 
   // thin bright beams with dark gaps; the phase leans slightly with the height so the beams bend a little
   float lean = 2.0*(w1 - 0.5)*y;
-  float beams = 0.5 + 0.5*sin(40.0*a + 5.0*w1 + lean + 0.6*skyTime);
-  beams = pow(beams, 3.0);
-  float fine = 0.5 + 0.5*sin(77.0*a + 9.0*w2 - 0.4*skyTime);
+  float beams = 0.5 + 0.5*sin(30.0*a + 5.0*w1 + lean + 0.6*skyTime);
+  beams = pow(beams, 2.0);
+  float fine = 0.5 + 0.5*sin(58.0*a + 9.0*w2 - 0.4*skyTime);
   beams *= 0.55 + 0.45*fine;
 
   // beams come in dense groups (only a few thin stretches of sky stay empty)
