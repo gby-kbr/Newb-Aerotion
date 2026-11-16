@@ -17,6 +17,7 @@ void main() {
 
     vec3 color = renderEndSky(getEndHorizonCol(), getEndZenithCol(), normalize(v_posTime.xyz), v_posTime.w);
     color += endstreaks(getEndHorizonCol(), getEndZenithCol(), viewDir, v_posTime.w);
+    color += endNebula(viewDir, v_posTime.w);
     #ifdef NL_BLACKHOLE
       vec4 bh = renderBlackhole(viewDir, v_posTime.w);
       color *= bh.a;
