@@ -47,10 +47,7 @@
 
 /* Sky colors - zenith=top, horizon=bottom (smooth gradient between the two) */
 #define NL_DAWN_ZENITH_COL   vec3(0.12,0.38,0.90)  // blue at the top
-#define NL_DAWN_HORIZON_COL  vec3(4.5,1.90,0.20)   // orange-red band at the horizon
-#define NL_DAWN_SPREAD 1.0       // 0.0 off ~ 1.0 full spread
-#define NL_DAWN_WIDTH 1.0       // sideways reach: 2.0 tight ~ 0.4 very wide
-#define NL_DAWN_HEIGHT 0.9      // upward reach: 2.0 low ~ 0.7 very high
+#define NL_DAWN_HORIZON_COL  vec3(4.5,1.90,0.20)   // orange-red color around the sun at sunrise/sunset
 
 #define NL_DAY_ZENITH_COL    vec3(0.2,1.2,2.8)
 #define NL_DAY_HORIZON_COL   vec3(0.25,1.6,2.4)
