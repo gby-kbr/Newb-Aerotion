@@ -43,17 +43,26 @@
 #define NL_CLOUDY_FOG 0.4         // [toggle] 0.0 subtle - 0.8 dense fog clouds
 
 /* Sky */
+#define NL_SKY_VOID_FACTOR     0.5
+#define NL_SKY_VOID_DARKNESS   0.0
 #define NL_SKY_RAIN_MIX_FACTOR 1.0
 
-/* Sky colors - zenith=top, horizon=bottom (smooth gradient between the two) */
+/* Sky colors - zenith=top, horizon=bottom */
 #define NL_DAWN_ZENITH_COL   vec3(0.12,0.38,0.90)  // blue at the top
-#define NL_DAWN_HORIZON_COL  vec3(4.5,1.90,0.20)   // orange-red color around the sun at sunrise/sunset
+#define NL_DAWN_HORIZON_COL  vec3(4.5,1.90,0.20)   // orange-red band at the horizon
+#define NL_DAWN_EDGE_COL     vec3(4.6,3.00,0.50)    // yellow-orange core near the sun
+#define NL_DAWN_SPREAD 1.0       // 0.0 off ~ 1.0 full spread
+#define NL_DAWN_EDGE_SPREAD 1.0  // 0.0 zenith stays blue ~ 1.0 whole sky tinted
+#define NL_DAWN_WIDTH 1.0       // sideways reach: 2.0 tight ~ 0.4 very wide
+#define NL_DAWN_HEIGHT 0.9      // upward reach: 2.0 low ~ 0.7 very high
 
 #define NL_DAY_ZENITH_COL    vec3(0.2,1.2,2.8)
 #define NL_DAY_HORIZON_COL   vec3(0.25,1.6,2.4)
+#define NL_DAY_EDGE_COL      vec3(1.2,2.0,2.5)
 
 #define NL_NIGHT_ZENITH_COL  vec3(0.004,0.040,0.250)
 #define NL_NIGHT_HORIZON_COL vec3(0.004,0.095,0.340)
+#define NL_NIGHT_EDGE_COL    vec3(0.006,0.160,0.520)
 
 #define NL_RAIN_ZENITH_COL   vec3(0.175,0.175,0.175)
 #define NL_RAIN_HORIZON_COL  vec3(0.35,0.35,0.35)
@@ -62,7 +71,7 @@
 #define NL_END_HORIZON_COL   vec3(0.075,0.035,0.150)  // dark violet, also the fog color low
 
 /* End sky streaks */
-#define NL_END_STREAK 2.0                              // 0.0 off ~ 2.0 bright streaks
+#define NL_END_STREAK 1.1                              // 0.0 off ~ 2.0 bright streaks
 #define NL_END_STREAK_COL vec3(0.36,0.26,0.62)         // soft lavender
 
 /* blackhole at the end */
