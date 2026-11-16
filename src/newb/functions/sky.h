@@ -88,19 +88,22 @@ vec3 renderOverworldSky(nl_skycolor skyCol, nl_environment env, vec3 viewDir, bo
   vec2 g2 = g1*g1;
   vec2 gh2 = g2; // falloff of the glow around the sun
   #ifdef NL_SUN_GLOW_SHAPE
-    // sun glow follows the square sun texture: shrink the sun's distance along the diagonals of the upright
-    // sun quad (same basis as SunMoon/vertex.sc). On the quad axes nothing changes, the moon keeps its round glow.
-    // Only the glow is reshaped.
-    vec3 sunR = cross(vec3(0.0, 1.0, 0.0), env.sunDir);
-    sunR = length(sunR) > 0.001 ? normalize(sunR) : vec3(1.0, 0.0, 0.0);
-    vec2 sunQ = abs(vec2(dot(viewDir, sunR), dot(viewDir, cross(env.sunDir, sunR)))) + 1e-4;
-    sunQ /= max(sunQ.x, sunQ.y); // largest component = 1.0, so pow() cannot underflow
-    vec2 sunP = pow(sunQ, vec2_splat(NL_SUN_GLOW_SHAPE));
-    float sunShape = pow(sunP.x + sunP.y, 1.0/NL_SUN_GLOW_SHAPE)/length(sunQ); // p-norm / round norm, 1.0 on the axes
-    vec2 gs = g;
-    gs.x *= sunShape*sunShape;
-    vec2 gs1 = 1.0-mix(sqrt(gs), gs, env.rainFactor);
-    gh2 = gs1*gs1;
+    // the glow is ~0 beyond this angle, skip the shape math (3 pow) on the rest of the sky
+    if (g.x < 0.8) {
+      // sun glow follows the square sun texture: shrink the sun's distance along the diagonals of the upright
+      // sun quad (same basis as SunMoon/vertex.sc). On the quad axes nothing changes, the moon keeps its round glow.
+      // Only the glow is reshaped.
+      vec3 sunR = cross(vec3(0.0, 1.0, 0.0), env.sunDir);
+      sunR = length(sunR) > 0.001 ? normalize(sunR) : vec3(1.0, 0.0, 0.0);
+      vec2 sunQ = abs(vec2(dot(viewDir, sunR), dot(viewDir, cross(env.sunDir, sunR)))) + 1e-4;
+      sunQ /= max(sunQ.x, sunQ.y); // largest component = 1.0, so pow() cannot underflow
+      vec2 sunP = pow(sunQ, vec2_splat(NL_SUN_GLOW_SHAPE));
+      float sunShape = pow(sunP.x + sunP.y, 1.0/NL_SUN_GLOW_SHAPE)/length(sunQ); // p-norm / round norm, 1.0 on the axes
+      vec2 gs = g;
+      gs.x *= sunShape*sunShape;
+      vec2 gs1 = 1.0-mix(sqrt(gs), gs, env.rainFactor);
+      gh2 = gs1*gs1;
+    }
   #endif
   vec2 g4 = gh2*gh2;
   vec2 g8 = g4*g4;
@@ -207,6 +210,11 @@ vec4 renderBlackhole(vec3 viewdir,float t) {
     vec3 vr = viewdir;
     vr.xy = vec2(vr.x * cos(r) - vr.y * sin(r),vr.x * sin(r) + vr.y * cos(r));
     vec3 viewd = vr - vec3(0.0,-1.0,0.0);
+
+    // far from the hole everything below is exactly 0 (glow ends at d = 2.6): skip the ~30 sin/pow calls
+    if (NL_BH_DIST * length(viewd) > 2.65) {
+      return vec4(0.0, 0.0, 0.0, 1.0);
+    }
     
     float nl = sin(15.0 * viewd.x + t) * sin(15.0 * viewd.y - t) * sin(15.0 * viewd.z + t);
     float a = atan2(viewd.x,viewd.z);
