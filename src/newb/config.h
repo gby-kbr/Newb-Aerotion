@@ -111,7 +111,7 @@
 /* Underwater */
 #define NL_UNDERWATER_BRIGHTNESS 2.5        // 0.0 dark ~ 3.0 bright
 #define NL_CAUSTICS 2.0                     // 0.0 off ~ 2.0 strong, light pattern on the sea floor, seen from above and under water
-#define NL_CAUSTIC_GLOW 1.5                 // 0.0 off ~ 2.0 strong, extra light on the bright caustic lines
+#define NL_CAUSTIC_GLOW 2.0                 // 0.0 off ~ 2.0 strong, extra light on the bright caustic lines
 #define NL_UNDERWATER_WAVE 0.05               // [toggle] 0.02 subtle ~ 0.6 super wave
 #define NL_UNDERWATER_TINT vec3(2.0,1.9,1.6) // fog tint color when underwater
 #define NL_UNDERWATER_FOG 0.2               // [toggle] 1.0 original ~ 0.0 no fog underwater (lower = thinner fog, underwater only)
