@@ -253,54 +253,8 @@ vec4 renderBlackhole(vec3 viewdir,float t) {
     return vec4(col,hole);
 }
 
-// smooth value noise on the sky sphere (hash33 based, no texture)
-float endNoise(vec3 p) {
-  vec3 i = floor(p);
-  vec3 f = fract(p);
-  f = f*f*(3.0 - 2.0*f);
-  float n000 = hash33(i).x;
-  float n100 = hash33(i + vec3(1.0, 0.0, 0.0)).x;
-  float n010 = hash33(i + vec3(0.0, 1.0, 0.0)).x;
-  float n110 = hash33(i + vec3(1.0, 1.0, 0.0)).x;
-  float n001 = hash33(i + vec3(0.0, 0.0, 1.0)).x;
-  float n101 = hash33(i + vec3(1.0, 0.0, 1.0)).x;
-  float n011 = hash33(i + vec3(0.0, 1.0, 1.0)).x;
-  float n111 = hash33(i + vec3(1.0, 1.0, 1.0)).x;
-  return mix(mix(mix(n000, n100, f.x), mix(n010, n110, f.x), f.y),
-             mix(mix(n001, n101, f.x), mix(n011, n111, f.x), f.y), f.z);
-}
-
-// 3 octaves, range ~[0,1]
-float endFbm(vec3 p) {
-  float s = 0.5*endNoise(p);
-  p = p*2.03 + vec3(7.1, 3.7, 5.3);
-  s += 0.25*endNoise(p);
-  p = p*2.03 + vec3(7.1, 3.7, 5.3);
-  s += 0.125*endNoise(p);
-  return s/0.875;
-}
-
-// soft violet/blue nebula clouds along a galactic band. Fades to nothing at the horizon, so the sky
-// still meets the fog color there.
-vec3 endNebula(vec3 viewDir, float t) {
-  vec3 p = viewDir*2.4 + vec3(0.0, 0.0, 0.004*t);
-  float n1 = endFbm(p);
-  float n2 = endFbm(p*1.7 + vec3(11.0, 4.0, 2.0) + vec3(0.006*t, 0.0, 0.0));
-
-  // band of the galaxy across the sky
-  vec3 bandN = normalize(vec3(0.35, 0.25, 0.9));
-  float bd = dot(viewDir, bandN);
-  float band = exp(-bd*bd*9.0);
-
-  float dens = smoothstep(0.36, 0.82, n1);
-  vec3 col = mix(NL_END_NEBULA_COL_A, NL_END_NEBULA_COL_B, smoothstep(0.30, 0.70, n2));
-
-  float amount = dens*(0.30 + 0.70*band) + 0.35*band*n2*n2; // clouds plus a faint glow along the band
-  float mask = smoothstep(0.02, 0.35, abs(viewDir.y));
-  return NL_END_NEBULA*mask*amount*col;
-}
-
-// slow aurora-like veils hanging in the upper sky (all multipliers of the angle are integers: no seam)
+// sharp, slowly drifting light streaks hanging in the upper sky, brighter than the sky behind them
+// (all multipliers of the angle are integers: no seam)
 vec3 endstreaks(vec3 horizonCol,vec3 zenithCol,vec3 viewDir,float t) {
   float skyTime = t*0.2;
 
@@ -309,17 +263,23 @@ vec3 endstreaks(vec3 horizonCol,vec3 zenithCol,vec3 viewDir,float t) {
 
   float w1 = 0.5 + 0.5*sin(5.0*a + 0.9*sin(3.0*a + 0.7*skyTime) + 0.5*skyTime);
   float w2 = 0.5 + 0.5*sin(9.0*a - 0.35*skyTime + 2.0*w1);
+  float w3 = 0.5 + 0.5*sin(13.0*a + 0.5*skyTime + 3.0*w2);
 
-  // height of the veil wobbles with the waves; soft on both sides
-  float h = y - (0.32 + 0.14*w1 + 0.05*w2);
-  float veil = exp(-h*h*10.0);
-  veil *= smoothstep(0.0, 0.25, y)*(1.0 - smoothstep(0.55, 0.95, y)); // none at the horizon, and none at the pole where the angle pinches
+  // two thin ribbons: a bright main one and a fainter one above it, narrow in height so the edges are crisp
+  float h1 = y - (0.30 + 0.13*w1 + 0.04*w2);
+  float h2 = y - (0.50 + 0.10*w2 + 0.04*w3);
+  float rib = exp(-h1*h1*70.0) + 0.45*exp(-h2*h2*90.0);
 
-  // faint vertical rays inside the veil
-  float rays = 0.82 + 0.18*sin(36.0*a + 6.0*w1 + 0.4*skyTime);
-  float inten = veil*(0.35 + 0.65*w2)*rays;
+  // sharp vertical rays inside the ribbons (thin bright lines with dark gaps)
+  float rays = 0.5 + 0.5*sin(48.0*a + 7.0*w1 + 0.6*skyTime);
+  rays = pow(rays, 3.0);
+  rays = 0.25 + 0.75*rays;
 
-  vec3 col = mix(NL_END_STREAK_COL_LOW, NL_END_STREAK_COL_HIGH, smoothstep(0.10, 0.75, y + 0.2*w1));
+  float fade = smoothstep(0.0, 0.2, y)*(1.0 - smoothstep(0.6, 0.95, y)); // none at the horizon and at the pole
+  float inten = rib*fade*(0.35 + 0.65*w2)*rays;
+
+  // one soft lavender, only a little lighter in the core
+  vec3 col = NL_END_STREAK_COL*(1.0 + 0.8*inten);
   return NL_END_STREAK*inten*col;
 }
 

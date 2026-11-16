@@ -61,13 +61,9 @@
 #define NL_END_ZENITH_COL    vec3(0.010,0.006,0.035)  // deep indigo, also the fog color at the top
 #define NL_END_HORIZON_COL   vec3(0.075,0.035,0.150)  // dark violet, also the fog color low
 
-/* End sky: nebula and veils */
-#define NL_END_NEBULA 1.0                              // 0.0 off ~ 2.0 bright nebula clouds
-#define NL_END_NEBULA_COL_A vec3(0.30,0.08,0.65)       // violet clouds
-#define NL_END_NEBULA_COL_B vec3(0.06,0.34,0.70)       // blue clouds
-#define NL_END_STREAK 0.7                              // 0.0 off ~ 2.0 bright veils
-#define NL_END_STREAK_COL_LOW  vec3(0.12,0.55,0.65)    // teal at the bottom of the veils
-#define NL_END_STREAK_COL_HIGH vec3(0.45,0.18,0.85)    // violet at the top of the veils
+/* End sky streaks */
+#define NL_END_STREAK 1.0                              // 0.0 off ~ 2.0 bright streaks
+#define NL_END_STREAK_COL vec3(0.36,0.26,0.62)         // soft lavender
 
 /* blackhole at the end */
 #define NL_BLACKHOLE                         // [toggle] enable blackhole in endsky
