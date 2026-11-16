@@ -7,7 +7,6 @@
 struct nl_skycolor {
   vec3 zenith;
   vec3 horizon;
-  vec3 horizonEdge;
 };
 
 // rainbow spectrum
@@ -33,7 +32,6 @@ nl_skycolor nlEndSkyColors(nl_environment env) {
   nl_skycolor s;
   s.zenith = getEndZenithCol();
   s.horizon = getEndHorizonCol();
-  s.horizonEdge = s.horizon;
   return s;
 }
 
@@ -43,7 +41,6 @@ nl_skycolor nlOverworldSkyColors(nl_environment env) {
   float nightFactor = step(env.dayFactor, 0.0);
   s.zenith = mix(NL_DAY_ZENITH_COL, NL_NIGHT_ZENITH_COL*f, nightFactor);
   s.horizon = mix(NL_DAY_HORIZON_COL, NL_NIGHT_HORIZON_COL*f, nightFactor);
-  s.horizonEdge = mix(NL_DAY_EDGE_COL, NL_NIGHT_EDGE_COL*f, nightFactor);
 
   float dawnFactor = 1.0-env.dayFactor*env.dayFactor;
   dawnFactor *= dawnFactor*dawnFactor;
@@ -52,20 +49,17 @@ nl_skycolor nlOverworldSkyColors(nl_environment env) {
   // sunrise either (the dawn blend still bridges the night/day switch)
   s.zenith = mix(s.zenith, mix(NL_DAWN_ZENITH_COL, NL_DAY_ZENITH_COL, env.rainFactor), dawnFactor);
   s.horizon = mix(s.horizon, mix(NL_DAWN_HORIZON_COL, NL_DAY_HORIZON_COL, env.rainFactor), dawnFactor);
-  s.horizonEdge = mix(s.horizonEdge, mix(NL_DAWN_EDGE_COL, NL_DAY_EDGE_COL, env.rainFactor), dawnFactor);
 
   float zh = dot(s.zenith, vec3_splat(0.33));
   float hh = dot(s.horizon, vec3_splat(0.33));
   float rainMix = env.rainFactor*NL_SKY_RAIN_MIX_FACTOR;
   s.zenith = mix(s.zenith, NL_RAIN_ZENITH_COL*zh, rainMix);
   s.horizon = mix(s.horizon, NL_RAIN_HORIZON_COL*hh, rainMix);
-  s.horizonEdge = mix(s.horizonEdge, s.horizon, env.rainFactor);
 
   if (env.underwater) {
     vec3 underwaterFog = env.fogCol*env.fogCol*NL_UNDERWATER_TINT;
     s.zenith = mix(2.0*underwaterFog, underwaterFog*zh, 0.8);
     s.horizon = mix(2.0*underwaterFog, underwaterFog*hh, 0.8);
-    s.horizonEdge = s.horizon;
   }
 
   return s;
@@ -105,43 +99,34 @@ vec3 renderOverworldSky(nl_skycolor skyCol, nl_environment env, vec3 viewDir, bo
   vec2 g8 = g4*g4;
   float mg8 = (g8.x+g8.y)*mask*(1.0-0.9*env.rainFactor);
 
-  float vh = 1.0 - viewDir.y*viewDir.y;
-  float vh2 = vh*vh;
-  vh2 = mix(vh2, mix(1.0, vh2*vh2, NL_SKY_VOID_FACTOR), step(viewDir.y, 0.0));
-  vh2 = mix(vh2, 1.0, mg8);
-  float vh4 = vh2*vh2;
-
+  // smooth two-color gradient (zenith -> horizon), same curve as Dracore: 1 at the horizon, falls off smoothly upward;
+  // below the horizon the sky stays at the horizon color
+  float up = max(viewDir.y, 0.0);
+  float vh = 1.0 - up*up;
+  float gradient = vh*vh*vh;
   float rainMask = 1.0 - 0.5*env.rainFactor;
-  float gradient1 = vh4*vh4;
-  float gradient2 = 0.8*gradient1 + 0.2*vh2;
-  gradient1 *= gradient1;
-  gradient1 = mix(gradient1*gradient1, 1.0, mg8)*rainMask;
-  gradient2 = mix(gradient2, 1.0, mg8)*rainMask;
+  gradient = mix(gradient, 1.0, mg8)*rainMask;
 
   float dawnFactor = 1.0-env.dayFactor*env.dayFactor;
-  
+
   // dawn spread: same weight as the dawn color blend in nlOverworldSkyColors
   float dw = dawnFactor*dawnFactor*dawnFactor;
   dw *= mix(1.0, dw*dw, step(env.dayFactor, 0.0));
-  // rain brings the sky back to the original shape (dawnGradient1/2 replace the rain-masked gradients)
+  // rain brings the sky back to the original shape
   float sw = clamp(NL_DAWN_SPREAD*dw, 0.0, 1.0)*(1.0-env.rainFactor);
-  float ew = clamp(NL_DAWN_EDGE_SPREAD*dw, 0.0, 1.0)*(1.0-env.rainFactor);
 
   // angular falloff around the sun: exponent 2.0 = original, lower = wider
   float sunFall = mix(g2.x, pow(g1.x, NL_DAWN_WIDTH), sw);
   float df = mix(1.0, sunFall, dawnFactor*dawnFactor*(1.0-env.rainFactor)); // no dawn falloff around the sun in rain
 
-  // height falloff: exponent on (1 - y^2), 2.0 = tight, lower = reaches higher
-  float dawnGradient1 = mix(gradient1, pow(vh, NL_DAWN_HEIGHT), sw);
-  float dawnGradient2 = mix(gradient2, vh, ew);
+  // height falloff at dawn: exponent on (1 - y^2), 2.0 = tight, lower = reaches higher
+  float dawnGradient = mix(gradient, pow(vh, NL_DAWN_HEIGHT), sw);
 
-  vec3 sky = mix(skyCol.horizon, skyCol.horizonEdge, dawnGradient1*df*df);
-  sky = mix(skyCol.zenith, sky, dawnGradient2*df);
+  vec3 sky = mix(skyCol.zenith, skyCol.horizon, dawnGradient*df);
 
   // weaker gradient at night (0.5+0.5 instead of 0.8+0.8); eased night mask
   float nightMask = 1.0 - smoothstep(-0.12, 0.25, env.dayFactor); // eases in/out around sunrise and sunset (a step() here made the sky jump)
-  sky *= mix(0.8+0.8*gradient2, 0.5+0.5*gradient2, nightMask);
-  //sky *= (1.0 + (2.0*mg8 + 7.0*mg8*mg8)*mask)*mix(1.0, mask, NL_SKY_VOID_DARKNESS);
+  sky *= mix(0.8+0.8*gradient, 0.5+0.5*gradient, nightMask);
 
   if (!isSkyPlane) {
     float source = max(0.0, (mg8-0.22)/0.78);

@@ -30,7 +30,7 @@ float cloudNoise2D(vec2 p, highp float t, float rain) {
 vec4 renderCloudsSimple(nl_skycolor skycol, vec3 pos, highp float t, float rain) {
   pos.xz *= NL_CLOUD1_SCALE;
   float d = cloudNoise2D(pos.xz, t, rain);
-  vec4 col = vec4(skycol.horizonEdge + skycol.zenith, smoothstep(0.1,0.6,d));
+  vec4 col = vec4(skycol.horizon + skycol.zenith, smoothstep(0.1,0.6,d));
   col.rgb += 1.5*dot(col.rgb, vec3(0.3,0.4,0.3))*smoothstep(0.6,0.2,d)*col.a;
   col.rgb *= 1.0 - 0.8*rain;
   return col;

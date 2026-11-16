@@ -60,7 +60,7 @@ void main() {
       worldPos = mul(model, vec4(pos, 1.0)).xyz;
 
       float cloudFadeY = smoothstep(0.0, 1.0, a_position.y);
-      color.rgb = skycol.zenith + skycol.horizonEdge;
+      color.rgb = skycol.zenith + skycol.horizon;
       color.rgb += dot(color.rgb, vec3(0.3,0.4,0.3))*a_position.y;
       color.rgb *= 1.0 - 0.6*rain;
       color.rgb = colorCorrection(color.rgb);
@@ -107,7 +107,7 @@ void main() {
       #else // NL_CLOUD_TYPE 2
         v_dayFactor = env.dayFactor;
         v_color1 = vec4(skycol.zenith, rain);
-        v_color2 = vec4(skycol.horizonEdge, ViewPositionAndTime.w);
+        v_color2 = vec4(skycol.horizon, ViewPositionAndTime.w);
         color = vec4(worldPos, fade);
       #endif 
     #endif
@@ -131,7 +131,7 @@ void main() {
 
     v_dayFactor = env.dayFactor;
     v_color1 = vec4(skycol.zenith, rain);
-    v_color2 = vec4(skycol.horizonEdge, ViewPositionAndTime.w);
+    v_color2 = vec4(skycol.horizon, ViewPositionAndTime.w);
     gl_Position = apos;
   #endif
 }
