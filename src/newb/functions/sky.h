@@ -266,13 +266,13 @@ vec3 endstreaks(vec3 horizonCol,vec3 zenithCol,vec3 viewDir,float t) {
 
   // thin bright beams with dark gaps; the phase leans slightly with the height so the beams bend a little
   float lean = 2.0*(w1 - 0.5)*y;
-  float beams = 0.5 + 0.5*sin(26.0*a + 5.0*w1 + lean + 0.6*skyTime);
+  float beams = 0.5 + 0.5*sin(40.0*a + 5.0*w1 + lean + 0.6*skyTime);
   beams = pow(beams, 3.0);
-  float fine = 0.5 + 0.5*sin(52.0*a + 9.0*w2 - 0.4*skyTime);
+  float fine = 0.5 + 0.5*sin(77.0*a + 9.0*w2 - 0.4*skyTime);
   beams *= 0.55 + 0.45*fine;
 
-  // beams come in groups (some stretches of sky stay empty)
-  float groups = smoothstep(0.15, 0.85, w2);
+  // beams come in dense groups (only a few thin stretches of sky stay empty)
+  float groups = smoothstep(0.0, 0.55, w2);
 
   // vertical profile: starts deep in the void, strongest at the horizon, thins out before the zenith
   float prof = smoothstep(-0.95, -0.30, y)*(1.0 - smoothstep(0.70, 0.98, y));
