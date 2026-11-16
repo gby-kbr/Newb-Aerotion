@@ -23,14 +23,6 @@ float fastRand(vec2 n){
   return fract(37.45*sin(dot(n, vec2(4.36, 8.28))));
 }
 
-// used by caustic
-float disp(vec3 pos, float t) {
-  float n = sin(8.0*PI_HALF*(pos.x+pos.y*pos.z) + 0.7*t);
-  pos.y += t + 0.8*n;
-  float p = floor(pos.y);
-  return (0.8+0.2*n) * mix(fastRand(pos.xz+p), fastRand(pos.xz+p+1.0), pos.y - p);
-}
-
 // [1]
 float noise2D(vec2 u) {
   vec2 u0 = floor(u);

@@ -11,6 +11,7 @@
 #include "functions/sky.h"
 #include "functions/clouds.h"
 #include "functions/lighting.h"
+#include "functions/caustics.h"
 #include "functions/water.h"
 #include "functions/rain.h"
 #include "functions/wave.h"

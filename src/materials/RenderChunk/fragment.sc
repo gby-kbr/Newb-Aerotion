@@ -6,7 +6,7 @@ $input v_color0, v_color1, v_fog, v_refl, v_texcoord0, v_lightmapUV, v_extra, v_
 SAMPLER2D_AUTOREG(s_MatTexture);
 SAMPLER2D_AUTOREG(s_SeasonsTexture);
 SAMPLER2D_AUTOREG(s_LightMapTexture);
-SAMPLER2D_AUTOREG(s_caustic);
+SAMPLER2D_AUTOREG(s_caustic_noise);
 
 uniform vec4 TimeOfDay;
 uniform vec4 FogColor;
@@ -44,28 +44,6 @@ void main() {
 
   nl_environment env = nlDetectEnvironment(TimeOfDay.x,FogColor.rgb,FogAndDistanceControl.xyz);
   
-  vec3 N;
-     N = normalize(cross(dFdx(v_position), dFdy(v_position)));
-
-  bool blockUnderWater = !env.end &&
-    v_lightmapUV.y < 0.9 &&
-    abs((2.0 * v_position.y - 15.0) / 16.0 - v_lightmapUV.y) < 0.00002;
-
-  if(env.underwater || blockUnderWater){
-      vec2 uv = v_position.xz * 0.15; 
-      uv += vec2(ViewPositionAndTime.w * 0.02, ViewPositionAndTime.w * 0.02); 
-      vec3 caustic = texture2D(s_caustic, uv).rgb;
-
-      float ndotl = max(N.y, 0.0); 
-      caustic *= ndotl * 0.5;
-
-      vec3 watercol = vec3(0.0, 0.3, 0.5);
-      vec3 finalColor = watercol + caustic;
-
-      diffuse.rgb *= finalColor;
-      diffuse.rgb *= 2.7;
-  }
-
   #if defined(SEASONS) && (defined(OPAQUE) || defined(ALPHA_TEST))
     diffuse.rgb *= mix(vec3(1.0,1.0,1.0), texture2D(s_SeasonsTexture, v_color1.xy).rgb * 2.0, v_color1.z);
   #endif
@@ -84,6 +62,21 @@ void main() {
   #endif
 
   diffuse.rgb *= color.rgb;
+
+  #if !defined(ALPHA_TEST) && !defined(SEASONS) && !defined(TRANSPARENT)
+    // moving light pattern on the sea floor, only below the water surface of the sea
+    {
+      vec3 absPos = v_wpos + CameraPosition.xyz;
+      if (absPos.y < NL_CAUSTIC_SURFACE_Y - 0.5) {
+        vec3 viewDir = normalize(v_wpos);
+        vec3 geoNormal = normalize(cross(dFdx(v_position), dFdy(v_position)));
+        if (dot(geoNormal, viewDir) > 0.0) {
+          geoNormal = -geoNormal;
+        }
+        diffuse.rgb = nlCaustics(s_caustic_noise, diffuse.rgb, absPos.xz, absPos.y, length(v_wpos), geoNormal, v_lightmapUV.y, env, ViewPositionAndTime.w);
+      }
+    }
+  #endif
 
   float rainShadowMask = mix(1.0, 0.25, env.rainFactor);
   float nightShadowMask = mix(1.0, 0.25, 1.0 - smoothstep(-0.12, 0.25, env.dayFactor)); // eased night mask (same curve as the sky)

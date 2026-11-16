@@ -1,17 +1,17 @@
 {
-  "name": "caustic",
+  "name": "caustic_noise",
   "register_slot": 7,
   "binding_slot": 7,
   "type": "texture2D",
-  "precision": "lowp",
+  "precision": "mediump",
   "access": "readonly",
   "texture_format": "",
   "default_texture": "",
   "unordered_access": false,
   "slot_count": 1,
-  "texture_path": "textures/environment/caustic",
+  "texture_path": "textures/environment/caustic_noise",
   "unknown": 0,
-   "sampler_state": {
+  "sampler_state": {
     "filter": "Bilinear",
     "wrapping": "Repeat"
   },
