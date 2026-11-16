@@ -62,7 +62,7 @@
 #define NL_END_HORIZON_COL   vec3(0.075,0.035,0.150)  // dark violet, also the fog color low
 
 /* End sky streaks */
-#define NL_END_STREAK 1.0                              // 0.0 off ~ 2.0 bright streaks
+#define NL_END_STREAK 2.0                              // 0.0 off ~ 2.0 bright streaks
 #define NL_END_STREAK_COL vec3(0.36,0.26,0.62)         // soft lavender
 
 /* blackhole at the end */
