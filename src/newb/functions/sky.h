@@ -150,6 +150,10 @@ vec3 renderOverworldSky(nl_skycolor skyCol, nl_environment env, vec3 viewDir, bo
     float source = max(0.0, (mg8-0.22)/0.78);
     source *= source;
     source *= source;
+    // inner halo of the sun turns cool white (like the morning sun) so the day-blue glow has no outline right around
+    // the sun disc; the wider glow keeps the sky color. Fades out at dawn/dusk, where the sky is already warm.
+    float haloWhite = clamp(source*10.0*NL_SUN_HALO_WHITE*NL_SUN_HALO_WHITE, 0.0, 1.0)*(1.0-dw);
+    sky = mix(sky, vec3_splat(dot(sky, vec3_splat(0.3333)))*vec3(0.93, 0.97, 1.0), haloWhite);
     sky *= 1.0 + 17.0*source*(1.0-env.rainFactor);
   }
 
