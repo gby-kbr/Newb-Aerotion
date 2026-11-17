@@ -220,16 +220,12 @@
 #ifdef LOW
   // reduced values
   #undef NL_FOG
-  #define NL_FOG 0.5
 
   #undef NL_MIST_DENSITY
-  #define NL_MIST_DENSITY 0.3
+  #define NL_MIST_DENSITY 0.0
 
   #undef NL_RAIN_MIST_OPACITY
-  #define NL_RAIN_MIST_OPACITY 0.3
-
   #undef NL_CLOUDY_FOG
-  #define NL_CLOUDY_FOG 0.15
 
   #undef NL_CLOUD_TYPE
   #define NL_CLOUD_TYPE 0
@@ -238,13 +234,13 @@
   #define NL_GLOW_TEX 2.2
 
   #undef NL_GLOW_SHIMMER
-  #define NL_GLOW_SHIMMER 0.35
 
   #undef NL_PLANTS_WAVE
   #undef NL_LANTERN_WAVE
+  #undef NL_EXTRA_PLANTS_WAVE
 
   #undef NL_WATER_BUMP
-  #define NL_WATER_BUMP 0.001
+  #define NL_WATER_BUMP 0.0
 
   #undef NL_UNDERWATER_WAVE
 
