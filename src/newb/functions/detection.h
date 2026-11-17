@@ -84,7 +84,8 @@ nl_environment nlDetectEnvironment(float TIME_OF_DAY, vec3 FOG_COLOR, vec3 FOG_C
   env.end = detectEnd(FOG_COLOR);
   env.nether = detectNether(FOG_COLOR, FOG_CONTROL.xy);
   env.underwater = detectUnderwater(FOG_COLOR, FOG_CONTROL.xy);
-  env.rainFactor = detectRain(FOG_CONTROL.xyz);
+  // the fog values of the End and the Nether look like rain to detectRain(): no rain there (it made wet patches on the ground)
+  env.rainFactor = (env.end || env.nether) ? 0.0 : detectRain(FOG_CONTROL.xyz);
   env.fogCol = FOG_COLOR;
   env = calculateSunParams(env, TIME_OF_DAY);
   return env;
