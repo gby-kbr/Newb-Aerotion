@@ -24,7 +24,7 @@ $output v_texcoord0, v_sunVis
 
 void main() {
   v_texcoord0 = a_texcoord0;
-  v_sunVis = 2.0; // moon: 2.0. The sun overwrites it with its visibility 0.0 .. 1.0 (1.0 = fully visible, only the sun is ever hidden)
+  v_sunVis = 1.0; // 1.0 = fully visible, only the sun is ever hidden below
   #ifndef INSTANCING
     vec3 pos = a_position;
     pos.x = -pos.x;
