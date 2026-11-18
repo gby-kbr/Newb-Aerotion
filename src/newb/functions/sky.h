@@ -235,19 +235,20 @@ vec3 nlSunHalo(vec3 sky, nl_environment env, vec3 viewDir) {
   float g4 = gh2*gh2;
   float g8 = g4*g4;
 
-  // fixed mask (not the sky height) so the halo has the same size at dawn as at noon
-  float source = max(0.0, (g8*0.85*(1.0-0.9*env.rainFactor) - 0.22)/0.78);
-  source *= source;
-  source *= source;
+  // fixed mask (not the sky height) so the halo has the same size at dawn as at noon.
+  // This is the same weight that pulls the sky toward the glow color, so the halo covers the whole colored ring
+  // around the sun disc (the disc itself is only a few degrees wide).
+  float glow = g8*0.85*(1.0-0.9*env.rainFactor);
 
   float dawnFactor = 1.0 - env.dayFactor*env.dayFactor;
   float dw = dawnFactor*dawnFactor*dawnFactor;
   dw *= mix(1.0, dw*dw, step(env.dayFactor, 0.0));
   float sunUp = smoothstep(-0.12, 0.25, env.dayFactor); // no halo while the sun is well below the horizon
 
-  float w = clamp(source*10.0*NL_SUN_HALO_WHITE*NL_SUN_HALO_WHITE, 0.0, 1.0)*sunUp*(1.0-env.rainFactor);
+  float w = clamp(smoothstep(0.08, 0.5, glow)*NL_SUN_HALO_WHITE, 0.0, 1.0)*sunUp*(1.0-env.rainFactor);
   vec3 tint = mix(vec3(0.93, 0.97, 1.0), vec3(1.0, 0.99, 0.96), clamp(dw, 0.0, 1.0));
-  return mix(sky, vec3_splat(dot(sky, vec3_splat(0.3333)))*tint, w);
+  float peak = max(sky.r, max(sky.g, sky.b)); // keep the brightness of the glow, only drop its color
+  return mix(sky, vec3_splat(peak)*tint, w);
 }
 
 vec3 nlRenderSky(nl_skycolor skycol, nl_environment env, vec3 viewDir, float t, bool isSkyPlane) {
