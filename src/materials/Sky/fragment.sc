@@ -37,9 +37,6 @@ void main() {
       }
     #endif
 
-    // after the clouds: at day the clouds are painted over the sky with the cyan sky colors and would hide the halo
-    skyColor = nlSunHalo(skyColor, env, -viewDir);
-
     skyColor = colorCorrection(skyColor);
 
     gl_FragColor = vec4(skyColor, 1.0);

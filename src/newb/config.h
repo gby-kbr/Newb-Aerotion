@@ -194,7 +194,6 @@
 
 /* Sun glow shape: the glow around the sun follows the (square) sun texture */
 #define NL_SUN_GLOW_SHAPE 6.0 // [toggle] 2.0 round ~ 5.0 rounded square ~ 12.0 square. Sun only, the moon keeps the round glow
-#define NL_SUN_HALO_WHITE 1.5 // 0.0 off ~ 1.5 full: white sky right around the sun, so the sun glow has no colored fringe
 
 /* Fake godrays during sunrise/sunset */
 #define NL_GODRAY 1.0     // [toggle] 0.1 low - 1.0 strength
@@ -203,6 +202,7 @@
 //#define NL_GROUND_REFL 0.0       // [toggle] 0.2 slightly reflective ~ 1.0 fully reflect sky
 #define NL_GROUND_RAIN_WETNESS 1.0 // 0.0 no wetness ~ 1.0 fully wet blocks when raining
 #define NL_GROUND_RAIN_PUDDLES 1.0 // 0.0 normal wet ground ~ 1.0 fully wet, glossy surface in rain (same everywhere, very cheap)
+#define NL_GROUND_RAIN_REFL 0.10 // reflection of wet ground seen from straight above: 0.03 faint (only visible at grazing angles) ~ 0.2 strong
 
 /* Entity (Actor, ItemInHand) */
 #define NL_ENTITY_BRIGHTNESS     0.1 // 0.1 dark ~ 1.6 bright

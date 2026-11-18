@@ -206,51 +206,6 @@ vec3 nlRenderEndFog(nl_skycolor skycol, vec3 viewDir) {
   return mix(skycol.zenith, skycol.horizon, pow(1.0 - grad, 1.35));
 }
 
-// Inner halo of the sun on the sky dome: blends the sky right around the sun disc to a soft white so no colored
-// outline is left around it. Cool white at day, a warm white at dawn/dusk (the wide glow keeps the sky color).
-// Only used by the Sky material, so fog, water and the other callers of nlRenderSky are not affected.
-// Takes the same viewDir as nlRenderSky.
-vec3 nlSunHalo(vec3 sky, nl_environment env, vec3 viewDir) {
-  if (env.end || env.nether || env.underwater) {
-    return sky;
-  }
-  viewDir.y = -viewDir.y;
-
-  float gx = clamp(0.5 - 0.5*dot(env.sunDir, viewDir), 0.0, 1.0);
-  if (gx > 0.8) {
-    return sky; // glow is ~0 here
-  }
-  #ifdef NL_SUN_GLOW_SHAPE
-    // same square glow shape as renderOverworldSky
-    vec3 sunR = cross(vec3(0.0, 1.0, 0.0), env.sunDir);
-    sunR = length(sunR) > 0.001 ? normalize(sunR) : vec3(1.0, 0.0, 0.0);
-    vec2 sunQ = abs(vec2(dot(viewDir, sunR), dot(viewDir, cross(env.sunDir, sunR)))) + 1e-4;
-    sunQ /= max(sunQ.x, sunQ.y);
-    vec2 sunP = pow(sunQ, vec2_splat(NL_SUN_GLOW_SHAPE));
-    float sunShape = pow(sunP.x + sunP.y, 1.0/NL_SUN_GLOW_SHAPE)/length(sunQ);
-    gx *= sunShape*sunShape;
-  #endif
-  float gs1 = 1.0 - mix(sqrt(gx), gx, env.rainFactor);
-  float gh2 = gs1*gs1;
-  float g4 = gh2*gh2;
-  float g8 = g4*g4;
-
-  // fixed mask (not the sky height) so the halo has the same size at dawn as at noon.
-  float glow = g8*0.85*(1.0-0.9*env.rainFactor);
-
-  float dawnFactor = 1.0 - env.dayFactor*env.dayFactor;
-  float dw = dawnFactor*dawnFactor*dawnFactor;
-  dw *= mix(1.0, dw*dw, step(env.dayFactor, 0.0));
-  float sunUp = smoothstep(-0.12, 0.25, env.dayFactor); // no halo while the sun is well below the horizon
-
-  // the sun sprite adds white glow on top of the sky, which leaves a colored fringe (cyan at day, yellow at dawn)
-  // where the sky is colored: make the sky white where that glow is (a small area around the disc, not a wide blob)
-  float w = smoothstep(0.30, 0.60, glow)*clamp(NL_SUN_HALO_WHITE/1.5, 0.0, 1.0)*sunUp*(1.0-env.rainFactor);
-  vec3 tint = mix(vec3(0.93, 0.97, 1.0), vec3(1.0, 0.99, 0.96), clamp(dw, 0.0, 1.0));
-  float peak = max(sky.r, max(sky.g, sky.b)); // keep the brightness of the glow, only drop its color
-  return mix(sky, vec3_splat(peak)*tint, w);
-}
-
 vec3 nlRenderSky(nl_skycolor skycol, nl_environment env, vec3 viewDir, float t, bool isSkyPlane) {
   vec3 sky;
   viewDir.y = -viewDir.y;

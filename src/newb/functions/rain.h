@@ -63,7 +63,7 @@ vec4 nlRefl(
         // torch light
         wetRefl.rgb += torchColor*lit.x*NL_TORCHLIGHT_INTENSITY;
 
-        wetRefl.a = calculateFresnel(cosR, 0.03)*reflective;
+        wetRefl.a = calculateFresnel(cosR, NL_GROUND_RAIN_REFL)*reflective; // base reflectance: how much of the sky shows when looking down at the ground
         wetRefl.a *= clamp(2.0-2.0*camDist/endDist, 0.0, 1.0); // fade out before clip
       }
     }
