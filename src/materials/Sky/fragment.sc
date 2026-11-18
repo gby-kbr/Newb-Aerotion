@@ -28,7 +28,6 @@ void main() {
     nl_skycolor skycol = nlOverworldSkyColors(env);
 
     vec3 skyColor = nlRenderSky(skycol, env, -viewDir, v_underwaterRainTimeDay.z, true);
-    skyColor = nlSunHalo(skyColor, env, -viewDir);
 
     #if NL_CLOUD_TYPE == 4
       // bicubic clouds painted on the sky dome (the Clouds material draws nothing for this type)
@@ -37,6 +36,9 @@ void main() {
         skyColor = mix(withClouds, skyColor, env.rainFactor);
       }
     #endif
+
+    // after the clouds: at day the clouds are painted over the sky with the cyan sky colors and would hide the halo
+    skyColor = nlSunHalo(skyColor, env, -viewDir);
 
     skyColor = colorCorrection(skyColor);
 
