@@ -162,7 +162,6 @@
 #define NL_CLOUD4_LAYERS 6           // layers = volume and cost (4 ~ 12). Mobile: 5
 #define NL_CLOUD4_LOD_Y 0.065          // fewer octaves near the horizon (0.04 faithful ~ 0.08 fast)
 #define NL_CLOUD4_SCALE 1.25           // higher = smaller clouds
-#define NL_CLOUD4_WORLD_SIZE 80.0      // blocks per noise unit: lower = smaller clouds, also changes how fast they pass by when you move
 #define NL_CLOUD4_DENSITY 1.20         // higher = FEWER clouds (1.2 many ~ 2.4 few)
 #define NL_CLOUD4_SPEED 0.05           // wind speed
 #define NL_CLOUD4_LAYER_SQUEEZE 0.025 // layer separation (volume)

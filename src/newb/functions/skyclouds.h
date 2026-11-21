@@ -53,22 +53,22 @@
     return mix(vec3_splat(lum), c, sat);
   }
 
-  // Clouds anchored in the world: the view ray hits a cloud plane at a fixed height (cloudH = height of the plane
-  // relative to the camera, negative when the camera is above it) and the noise is read at the world position of
-  // that hit, so the clouds stay put when the player moves, and the player can fly above or below them.
+  // Clouds in the world: a stack of layers at fixed heights (the top layer is at the cloud height of the game,
+  // cloudH = its height relative to the camera). Each layer is hit by the view ray at its own height and the noise is
+  // read at the world position of the hit, so the clouds stay where they are, can be flown over and entered.
   // returns the clouds as a color with alpha (alpha blended over the sky by the Clouds material)
   vec4 bsbeClouds(vec3 nDir, float cloudH, vec2 camXZ, float fTime, vec3 horC, vec3 zenC, vec2 fragCoord) {
     float ay = abs(nDir.y);
-    if (nDir.y*cloudH <= 0.0 || ay < 0.001) {
-      return vec4(0.0, 0.0, 0.0, 0.0); // looking away from the cloud plane
+    if (ay < 0.001) {
+      return vec4(0.0, 0.0, 0.0, 0.0);
     }
 
     vec2 ray = nDir.xz / nDir.y;
     ray -= ray * bsbeHash(fragCoord.x + fragCoord.y * 57.0) * 0.05; // dither (only the view part, not the world position)
-    float planeH = cloudH;
 
-    float sDens = NL_CLOUD4_DENSITY;
-    vec3 cloDirC = horC * NL_CLOUD4_BRIGHTNESS;
+    // 80 blocks = the cloud height the pattern size was made for
+    float worldScale = NL_CLOUD4_SCALE / 80.0;
+    float layerGap = NL_CLOUD4_LAYER_SQUEEZE * 80.0; // blocks between two layers
     vec3 cloAmbC = bsbeSatur(zenC, 0.7);
 
     // layers are mixed over nothing: col = premultiplied color, trans = how much of the sky still shows through
@@ -80,20 +80,23 @@
     int nOct = int(step(1.0, lodY) + step(1.58, lodY) + step(2.5, lodY) + step(3.95, lodY));
     if (nOct > 0) {
       float horizonFade = smoothstep(0.0, NL_CLOUD4_HORIZON_FADE, ay);
-      for (int i = 0; i < NL_CLOUD4_LAYERS; i++) {
-        vec2 cloudP = (ray*planeH + camXZ) * (NL_CLOUD4_SCALE / NL_CLOUD4_WORLD_SIZE);
-        float cloudM = bsbeFbm(cloudP, sDens, fTime, nOct);
-        cloDirC = mix(cloDirC, cloAmbC, NL_CLOUD4_AMBIENT_MIX);
-        float a = cloudM * horizonFade;
-        col = mix(col, cloDirC, a);
-        trans *= 1.0 - a;
-        sDens += (i <= 6) ? -0.1 : 0.1;
-        planeH *= 1.0 - NL_CLOUD4_LAYER_SQUEEZE; // next layer is a little lower (volume)
+      for (int k = 0; k < NL_CLOUD4_LAYERS; k++) {
+        // far to near: looking up the highest layer is the farthest, looking down the lowest one is
+        int i = nDir.y > 0.0 ? k : NL_CLOUD4_LAYERS - 1 - k;
+        float j = float(i);
+        float layerH = cloudH - j*layerGap;
+        if (layerH*nDir.y > 0.0) { // the layer is in front of the camera (not behind it)
+          float sDens = NL_CLOUD4_DENSITY - 0.1*(min(j, 7.0) - max(j - 7.0, 0.0));
+          vec3 cloDirC = mix(horC*NL_CLOUD4_BRIGHTNESS, cloAmbC, 1.0 - pow(1.0 - NL_CLOUD4_AMBIENT_MIX, j + 1.0));
+          float cloudM = bsbeFbm((ray*layerH + camXZ)*worldScale, sDens, fTime, nOct);
+          float a = cloudM * horizonFade;
+          col = mix(col, cloDirC, a);
+          trans *= 1.0 - a;
+        }
       }
     }
-    // fade out while the camera is inside the cloud layer
-    float alpha = (1.0 - trans) * smoothstep(1.0, 10.0, abs(cloudH));
-    return vec4(col / max(1.0 - trans, 0.0001), alpha);
+    float alpha = 1.0 - trans;
+    return vec4(col / max(alpha, 0.0001), alpha);
   }
 
 #endif
