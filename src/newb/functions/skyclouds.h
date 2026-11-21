@@ -53,7 +53,7 @@
     return mix(vec3_splat(lum), c, sat);
   }
 
-  // Clouds in the world: a stack of layers at fixed heights (the top layer is at the cloud height of the game,
+  // Clouds in the world: a stack of layers at fixed heights (centered on the cloud plane of the game,
   // cloudH = its height relative to the camera). Each layer is hit by the view ray at its own height and the noise is
   // read at the world position of the hit, so the clouds stay where they are, can be flown over and entered.
   // returns the clouds as a color with alpha (alpha blended over the sky by the Clouds material)
@@ -69,6 +69,7 @@
     // 80 blocks = the cloud height the pattern size was made for
     float worldScale = NL_CLOUD4_SCALE / 80.0;
     float layerGap = NL_CLOUD4_LAYER_SQUEEZE * 80.0; // blocks between two layers
+    float halfSpan = 0.5*float(NL_CLOUD4_LAYERS - 1)*layerGap; // the layers are centered on the cloud plane
     vec3 cloAmbC = bsbeSatur(zenC, 0.7);
 
     // layers are mixed over nothing: col = premultiplied color, trans = how much of the sky still shows through
@@ -84,7 +85,7 @@
         // far to near: looking up the highest layer is the farthest, looking down the lowest one is
         int i = nDir.y > 0.0 ? k : NL_CLOUD4_LAYERS - 1 - k;
         float j = float(i);
-        float layerH = cloudH - j*layerGap;
+        float layerH = cloudH + halfSpan - j*layerGap;
         if (layerH*nDir.y > 0.0) { // the layer is in front of the camera (not behind it)
           float sDens = NL_CLOUD4_DENSITY - 0.1*(min(j, 7.0) - max(j - 7.0, 0.0));
           vec3 cloDirC = mix(horC*NL_CLOUD4_BRIGHTNESS, cloAmbC, 1.0 - pow(1.0 - NL_CLOUD4_AMBIENT_MIX, j + 1.0));

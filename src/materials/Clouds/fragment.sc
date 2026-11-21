@@ -52,11 +52,11 @@ void main() {
 
       color.a *= smoothstep(0.0, 0.7, vDir.y);
     #elif NL_CLOUD_TYPE == 4
-      // bicubic clouds: full screen quad, v_color0.xyz = view direction, v_dayFactor = height of the cloud plane
+      // bicubic clouds: v_color0.xyz = position on the cloud plane relative to the camera (so y = cloud height)
       color = vec4(0.0, 0.0, 0.0, 0.0);
       if (v_color1.w < 0.99) { // v_color1.w = hidden by rain / underwater
-        color = bsbeClouds(vDir, v_dayFactor, CameraPosition.xz, v_color2.w, v_color2.rgb, v_color1.rgb, gl_FragCoord.xy);
-        color.a *= 1.0 - v_color1.w;
+        color = bsbeClouds(vDir, v_color0.y, CameraPosition.xz, v_color2.w, v_color2.rgb, v_color1.rgb, gl_FragCoord.xy);
+        color.a *= (1.0 - v_color1.w) * v_color0.a;
       }
     #endif
 

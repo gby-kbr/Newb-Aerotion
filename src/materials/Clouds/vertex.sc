@@ -43,7 +43,7 @@ void main() {
   vec3 pos = a_position;
   vec3 worldPos;
 
-  #if NL_CLOUD_TYPE <= 2
+  #if NL_CLOUD_TYPE <= 2 || NL_CLOUD_TYPE == 4
 
     vec4 color;
 
@@ -96,6 +96,14 @@ void main() {
 
         color.a *= fade;
         color.rgb = colorCorrection(color.rgb);
+      #elif NL_CLOUD_TYPE == 4
+        // bicubic clouds: the cloud mesh is flattened to a plane at the real cloud height (like type 2), so the depth
+        // test works (terrain in front of the clouds hides them, clouds in front of terrain cover it)
+        // w of color1 = how much the clouds are hidden (rain, underwater)
+        v_dayFactor = env.dayFactor;
+        v_color1 = vec4(skycol.zenith, max(rain, float(detectUnderwater(FogColor.rgb, FogAndDistanceControl.xy))));
+        v_color2 = vec4(skycol.horizon, ViewPositionAndTime.w);
+        color = vec4(worldPos, fade);
       #else // NL_CLOUD_TYPE 2
         v_dayFactor = env.dayFactor;
         v_color1 = vec4(skycol.zenith, rain);
@@ -116,23 +124,14 @@ void main() {
     #else
       float h = model[1][3];
     #endif
-    float cloudH = h; // cloud layer height relative to camera (same source as the type 0 cloud mesh)
     h = clamp(0.002*h, 0.0, 1.0);
 
     worldPos = mul(u_invViewProj, apos).xyz;
 
     v_color0 = vec4(worldPos, h);
     v_dayFactor = env.dayFactor;
-    #if NL_CLOUD_TYPE == 4
-      v_dayFactor = cloudH; // bicubic clouds: height of the cloud plane relative to the camera (day factor is not used)
-      // w of color1 = how much the clouds are hidden (rain, underwater)
-      float hidden = max(rain, float(detectUnderwater(FogColor.rgb, FogAndDistanceControl.xy)));
-      v_color1 = vec4(skycol.zenith, hidden);
-      v_color2 = vec4(skycol.horizon, ViewPositionAndTime.w);
-    #else
-      v_color1 = vec4(skycol.zenith, rain);
-      v_color2 = vec4(skycol.horizonEdge, ViewPositionAndTime.w);
-    #endif
+    v_color1 = vec4(skycol.zenith, rain);
+    v_color2 = vec4(skycol.horizonEdge, ViewPositionAndTime.w);
     gl_Position = apos;
   #endif
 }
