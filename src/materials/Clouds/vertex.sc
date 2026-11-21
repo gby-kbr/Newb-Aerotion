@@ -124,7 +124,8 @@ void main() {
     v_color0 = vec4(worldPos, h);
     v_dayFactor = env.dayFactor;
     #if NL_CLOUD_TYPE == 4
-      // bicubic clouds: w of color1 = how much the clouds are hidden (rain, underwater)
+      v_dayFactor = cloudH; // bicubic clouds: height of the cloud plane relative to the camera (day factor is not used)
+      // w of color1 = how much the clouds are hidden (rain, underwater)
       float hidden = max(rain, float(detectUnderwater(FogColor.rgb, FogAndDistanceControl.xy)));
       v_color1 = vec4(skycol.zenith, hidden);
       v_color2 = vec4(skycol.horizon, ViewPositionAndTime.w);
