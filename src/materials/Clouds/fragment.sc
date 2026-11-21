@@ -6,6 +6,7 @@ $input v_color0
 
 #include <bgfx_shader.sh>
 #include <newb/main.sh>
+#include <newb/functions/skyclouds.h>
 
 uniform vec4 CameraPosition;
 
@@ -50,6 +51,13 @@ void main() {
       #endif
 
       color.a *= smoothstep(0.0, 0.7, vDir.y);
+    #elif NL_CLOUD_TYPE == 4
+      // bicubic clouds: the Clouds material draws a full screen quad (no cloud mesh), v_color0.xyz = view direction
+      color = vec4(0.0, 0.0, 0.0, 0.0);
+      if (v_color1.w < 0.99) { // v_color1.w = hidden by rain / underwater
+        color = bsbeClouds(vDir, v_color2.w, v_color2.rgb, v_color1.rgb, gl_FragCoord.xy);
+        color.a *= 1.0 - v_color1.w;
+      }
     #endif
 
     color.rgb = colorCorrection(color.rgb);
