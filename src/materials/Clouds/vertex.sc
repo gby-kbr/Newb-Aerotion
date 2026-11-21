@@ -16,6 +16,7 @@ uniform vec4 FogAndDistanceControl;
 uniform vec4 ViewPositionAndTime;
 uniform vec4 TimeOfDay;
 uniform vec4 CameraPosition;
+uniform vec4 FogColor;
 
 float fog_fade(vec3 wPos) {
   return clamp(2.0-length(wPos*vec3(0.005, 0.002, 0.005)), 0.0, 1.0);
@@ -42,16 +43,7 @@ void main() {
   vec3 pos = a_position;
   vec3 worldPos;
 
-  #if NL_CLOUD_TYPE == 4
-
-    // type 4 is painted on the sky dome (Sky/fragment.sc): hide the cloud mesh
-    v_dayFactor = 0.0;
-    v_color0 = vec4(0.0, 0.0, 0.0, 0.0);
-    v_color1 = vec4(0.0, 0.0, 0.0, 0.0);
-    v_color2 = vec4(0.0, 0.0, 0.0, 0.0);
-    gl_Position = vec4(0.0, 0.0, 0.0, 0.0);
-
-  #elif NL_CLOUD_TYPE <= 2
+  #if NL_CLOUD_TYPE <= 2
 
     vec4 color;
 
@@ -129,9 +121,17 @@ void main() {
 
     worldPos = mul(u_invViewProj, apos).xyz;
 
+    v_color0 = vec4(worldPos, h);
     v_dayFactor = env.dayFactor;
-    v_color1 = vec4(skycol.zenith, rain);
-    v_color2 = vec4(skycol.horizonEdge, ViewPositionAndTime.w);
+    #if NL_CLOUD_TYPE == 4
+      // bicubic clouds: w of color1 = how much the clouds are hidden (rain, underwater)
+      float hidden = max(rain, float(detectUnderwater(FogColor.rgb, FogAndDistanceControl.xy)));
+      v_color1 = vec4(skycol.zenith, hidden);
+      v_color2 = vec4(skycol.horizon, ViewPositionAndTime.w);
+    #else
+      v_color1 = vec4(skycol.zenith, rain);
+      v_color2 = vec4(skycol.horizonEdge, ViewPositionAndTime.w);
+    #endif
     gl_Position = apos;
   #endif
 }

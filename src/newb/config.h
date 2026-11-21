@@ -156,7 +156,7 @@
 #define NL_CLOUD3_SHADOW 0.9             // 0.1 subtle ~ 1.0 dark
 #define NL_CLOUD3_SHADOW_OFFSET 0.3      // 0.05 minimal ~ 1.0 large
 
-/* Bicubic cloud settings (painted on the sky dome) */
+/* Bicubic cloud settings (drawn by the Clouds material, replaces the vanilla clouds) */
 #define NL_CLOUD4_NOISE_TEX           // [toggle] noise from texture (1 read) instead of math
 #define NL_CLOUD4_NOISE_CELLS 16.0    // voronoi cells of the texture (do NOT change without regenerating it)
 #define NL_CLOUD4_LAYERS 6           // layers = volume and cost (4 ~ 12). Mobile: 5
